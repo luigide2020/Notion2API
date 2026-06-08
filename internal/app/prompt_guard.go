@@ -196,6 +196,16 @@ func promptGuardPrepareRequest(cfg AppConfig, request PromptRunRequest) PromptRu
 	request.PromptProfileOverride = string(profile)
 	request.PromptEscalationStep = step
 	request.HiddenPrompt = stripPromptGuardSections(request.HiddenPrompt)
+	// Apply the profile prefix to the initial prompt so the model sees
+	// cognitive reframing instructions from the very first request, not
+	// only on retries.
+	section := buildPromptGuardSection(cfg, profile)
+	if section != "" {
+		cleanPrompt := strings.TrimSpace(request.Prompt)
+		if cleanPrompt != "" {
+			request.Prompt = section + "\n\n" + cleanPrompt
+		}
+	}
 	return request
 }
 
@@ -270,13 +280,39 @@ func promptGuardBuildRetryRequest(cfg AppConfig, request PromptRunRequest, attem
 		prefix := prefixes[minInt(attempt, len(prefixes)-1)]
 		basePrompt := promptGuardRetryBasePrompt(request)
 		if basePrompt != "" {
-			request.Prompt = prefix + promptGuardStripRetryPrefixes(cfg, basePrompt)
+			// Strip existing retry prefixes first
+			stripped := promptGuardStripRetryPrefixes(cfg, basePrompt)
+			// Also strip the profile prefix so it doesn't double up
+			stripped = promptGuardStripProfilePrefix(cfg, request, stripped)
+			if strings.TrimSpace(stripped) != "" {
+				request.Prompt = prefix + stripped
+			} else {
+				request.Prompt = prefix + basePrompt
+			}
 		}
 	}
 	profile, step := nextPromptGuardProfile(cfg, request, attempt, directAnswer)
 	request.PromptProfileOverride = string(profile)
 	request.PromptEscalationStep = step
 	return promptGuardPrepareRequest(cfg, request)
+}
+
+// promptGuardStripProfilePrefix removes the cognitive reframing / toolbox
+// profile prefix from a prompt so it can be cleanly re-applied.
+func promptGuardStripProfilePrefix(cfg AppConfig, request PromptRunRequest, text string) string {
+	profile := promptProfile(strings.TrimSpace(request.PromptProfileOverride))
+	if profile == "" {
+		profile, _ = resolvePromptGuardProfile(cfg, request)
+	}
+	section := buildPromptGuardSection(cfg, profile)
+	if section == "" {
+		return text
+	}
+	clean := strings.TrimSpace(text)
+	if strings.HasPrefix(clean, section) {
+		clean = strings.TrimSpace(clean[len(section):])
+	}
+	return clean
 }
 
 func promptGuardParagraphLooksLikeBoilerplate(text string) bool {
