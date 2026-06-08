@@ -250,6 +250,12 @@ func mergeEditableAccountFields(existing NotionAccount, payload map[string]any) 
 		}
 		next.MaxConcurrency = limit
 	}
+	if raw, ok := accountPayload["space_id"]; ok {
+		next.SpaceID = strings.TrimSpace(stringValue(raw))
+	}
+	if raw, ok := accountPayload["space_name"]; ok {
+		next.SpaceName = strings.TrimSpace(stringValue(raw))
+	}
 	makeActive, _ := payload["active"].(bool)
 	return next, makeActive, nil
 }

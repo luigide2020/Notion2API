@@ -38,6 +38,8 @@ interface AccountEditState {
   hourlyQuota: number;
   maxConcurrency: number;
   disabled: boolean;
+  spaceId: string;
+  spaceName: string;
 }
 
 interface ManualImportState {
@@ -84,6 +86,8 @@ function buildAccountEditMap(items: AccountItem[]): Record<string, AccountEditSt
       hourlyQuota: Number(item.hourly_quota ?? 0),
       maxConcurrency: Math.max(1, Number(item.max_concurrency ?? 1)),
       disabled: Boolean(item.disabled),
+      spaceId: String(item.space_id ?? ''),
+      spaceName: String(item.space_name ?? ''),
     };
     return accumulator;
   }, {});
@@ -273,8 +277,8 @@ export function AccountsPanel({
   const modelOptions = useMemo(() => models.filter((item) => item.id), [models]);
 
   const selectedEdit = selectedAccount?.email
-    ? accountEdits[selectedAccount.email] || { priority: 0, hourlyQuota: 0, maxConcurrency: 1, disabled: false }
-    : { priority: 0, hourlyQuota: 0, maxConcurrency: 1, disabled: false };
+    ? accountEdits[selectedAccount.email] || { priority: 0, hourlyQuota: 0, maxConcurrency: 1, disabled: false, spaceId: '', spaceName: '' }
+    : { priority: 0, hourlyQuota: 0, maxConcurrency: 1, disabled: false, spaceId: '', spaceName: '' };
 
   const summaryCards = [
     {
@@ -324,6 +328,8 @@ export function AccountsPanel({
         hourlyQuota: current[email]?.hourlyQuota ?? 0,
         maxConcurrency: current[email]?.maxConcurrency ?? 1,
         disabled: current[email]?.disabled ?? false,
+        spaceId: current[email]?.spaceId ?? '',
+        spaceName: current[email]?.spaceName ?? '',
         ...patch,
       },
     }));
@@ -361,6 +367,8 @@ export function AccountsPanel({
         hourly_quota: edit.hourlyQuota,
         max_concurrency: edit.maxConcurrency,
         disabled: edit.disabled,
+        space_id: edit.spaceId,
+        space_name: edit.spaceName,
       });
       toast.success(`已保存 ${email}`);
     } catch (error) {
@@ -764,6 +772,29 @@ export function AccountsPanel({
                         <MetaTile label="Last Used" value={formatMaybeDate(selectedAccount.last_used_at)} />
                       </div>
                     </Subsection>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <DetailField label="Space ID" hint="修改后点保存设置生效；session 刷新会覆盖为空则自动回填。">
+                      <Input
+                        value={selectedEdit.spaceId}
+                        onChange={(event) =>
+                          updateAccountEdit(selectedAccount.email, { spaceId: event.target.value })
+                        }
+                        className={FIELD_CLASS}
+                        placeholder="space id"
+                      />
+                    </DetailField>
+                    <DetailField label="Space Name">
+                      <Input
+                        value={selectedEdit.spaceName}
+                        onChange={(event) =>
+                          updateAccountEdit(selectedAccount.email, { spaceName: event.target.value })
+                        }
+                        className={FIELD_CLASS}
+                        placeholder="space name"
+                      />
+                    </DetailField>
                   </div>
 
                   <div className="grid gap-3 lg:grid-cols-2">
