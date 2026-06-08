@@ -39,6 +39,12 @@ var (
 		regexp.MustCompile(`(?is)只能帮助你?.{0,24}notion`),
 		regexp.MustCompile(`(?is)我没办法.{0,24}(?:扮演|进行).{0,24}(?:虚构角色|角色扮演)`),
 		regexp.MustCompile(`(?is)可以帮你(?:在|处理)?.{0,32}notion`),
+		// Detect "I'm inside a Notion page / can't see your project" type responses
+		regexp.MustCompile(`(?is)(?:i(?:'m| am)\s+)?(?:inside|in|on|within)\s+(?:a\s+)?notion\s+(?:page|workspace|document|app)`),
+		regexp.MustCompile(`(?is)(?:i\s+(?:can(?:not|'t)|don't|cannot)\s+(?:see|access|view)).{0,40}(?:your\s+(?:project|code|files|repository|codebase)|local\s+environment)`),
+		regexp.MustCompile(`(?is)(?:i\s+)?(?:only\s+)?(?:see|have\s+access\s+to|can\s+see).{0,30}(?:this\s+)?(?:notion\s+)?(?:page|document|workspace)`),
+		regexp.MustCompile(`(?is)(?:我(?:在|处于|正在|只能看到)).{0,20}(?:notion\s*)?(?:页面|文档|工作区|笔记)`),
+		regexp.MustCompile(`(?is)(?:看不到|无法访问|无法查看).{0,20}(?:你的|本地|项目|代码|文件)`),
 	}
 	promptGuardStrongRefusalPatterns = []*regexp.Regexp{
 		regexp.MustCompile(`(?is)\bi(?:'m| am)\s+notion\s+ai\b.{0,220}\b(?:workspace|pages?|databases?|docs?)\b`),
@@ -47,6 +53,9 @@ var (
 		regexp.MustCompile(`(?is)^\s*我(?:只能|仅能|只可以).{0,40}notion`),
 		regexp.MustCompile(`(?is)(?:can't|cannot|won't|unable\s+to|not\s+able\s+to).{0,64}(?:roleplay|fictional\s+character|creative\s+writing|creative\s+roleplay)`),
 		regexp.MustCompile(`(?is)我没办法.{0,24}(?:扮演|进行).{0,24}(?:虚构角色|角色扮演)`),
+		// "I'm in a Notion page and can't see your project" compound refusal
+		regexp.MustCompile(`(?is)(?:i(?:'m| am)\s+(?:in|inside|on)\s+(?:a\s+)?notion).{0,160}(?:can(?:not|'t)|don't|unable).{0,60}(?:your\s+(?:project|code|files)|local\s+(?:files|environment))`),
+		regexp.MustCompile(`(?is)(?:我在\s*notion).{0,80}(?:看不到|无法(?:访问|查看)).{0,40}(?:你的|项目|代码|文件)`),
 	}
 )
 
