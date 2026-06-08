@@ -29,19 +29,20 @@ type ResolvedSessionRefresh struct {
 }
 
 type LoginStatusFile struct {
-	Success          bool   `json:"success"`
-	Status           string `json:"status,omitempty"`
-	Email            string `json:"email,omitempty"`
-	ProfileDir       string `json:"profile_dir,omitempty"`
-	PendingStatePath string `json:"pending_state_path,omitempty"`
-	StorageStatePath string `json:"storage_state_path,omitempty"`
-	ProbePath        string `json:"probe_path,omitempty"`
-	UserID           string `json:"user_id,omitempty"`
-	UserName         string `json:"user_name,omitempty"`
-	SpaceID          string `json:"space_id,omitempty"`
-	SpaceViewID      string `json:"space_view_id,omitempty"`
-	SpaceName        string `json:"space_name,omitempty"`
-	ClientVersion    string `json:"client_version,omitempty"`
+	Success          bool               `json:"success"`
+	Status           string             `json:"status,omitempty"`
+	Email            string             `json:"email,omitempty"`
+	ProfileDir       string             `json:"profile_dir,omitempty"`
+	PendingStatePath string             `json:"pending_state_path,omitempty"`
+	StorageStatePath string             `json:"storage_state_path,omitempty"`
+	ProbePath        string             `json:"probe_path,omitempty"`
+	UserID           string             `json:"user_id,omitempty"`
+	UserName         string             `json:"user_name,omitempty"`
+	SpaceID          string             `json:"space_id,omitempty"`
+	SpaceViewID      string             `json:"space_view_id,omitempty"`
+	SpaceName        string             `json:"space_name,omitempty"`
+	AvailableSpaces  []AccountSpaceInfo `json:"available_spaces,omitempty"`
+	ClientVersion    string             `json:"client_version,omitempty"`
 	CurrentURL       string `json:"current_url,omitempty"`
 	FinalURL         string `json:"final_url,omitempty"`
 	Title            string `json:"title,omitempty"`

@@ -144,6 +144,12 @@ export interface HealthPayload {
   space_id?: string;
 }
 
+export interface AccountSpaceInfo {
+  space_id?: string;
+  space_name?: string;
+  plan_type?: string;
+}
+
 export interface AccountItem {
   email?: string;
   active?: boolean;
@@ -170,6 +176,7 @@ export interface AccountItem {
   user_name?: string;
   space_id?: string;
   space_name?: string;
+  available_spaces?: AccountSpaceInfo[];
   plan_type?: string;
   client_version?: string;
   probe_json?: string;

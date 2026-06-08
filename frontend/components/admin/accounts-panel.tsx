@@ -774,27 +774,66 @@ export function AccountsPanel({
                     </Subsection>
                   </div>
 
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <DetailField label="Space ID" hint="修改后点保存设置生效；session 刷新会覆盖为空则自动回填。">
-                      <Input
-                        value={selectedEdit.spaceId}
-                        onChange={(event) =>
-                          updateAccountEdit(selectedAccount.email, { spaceId: event.target.value })
-                        }
-                        className={FIELD_CLASS}
-                        placeholder="space id"
-                      />
+                  <div className="space-y-4">
+                    <DetailField label="Space" hint="从自动获取的空间列表中选择，修改后点保存设置生效。">
+                      {selectedAccount.available_spaces && selectedAccount.available_spaces.length > 0 ? (
+                        <Select
+                          value={selectedEdit.spaceId}
+                          onValueChange={(value) => {
+                            const space = selectedAccount.available_spaces?.find((s) => s.space_id === value);
+                            updateAccountEdit(selectedAccount.email, {
+                              spaceId: value,
+                              spaceName: space?.space_name ?? selectedEdit.spaceName,
+                            });
+                          }}
+                        >
+                          <SelectTrigger className={FIELD_CLASS}>
+                            <SelectValue placeholder="选择空间" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {selectedAccount.available_spaces.map((space) => (
+                              <SelectItem key={space.space_id} value={space.space_id || ''}>
+                                {space.space_name || space.space_id || '-'}
+                                {space.plan_type ? ` (${space.plan_type})` : ''}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input
+                          value={selectedEdit.spaceId}
+                          onChange={(event) =>
+                            updateAccountEdit(selectedAccount.email, { spaceId: event.target.value })
+                          }
+                          className={FIELD_CLASS}
+                          placeholder="无可用空间列表，手动输入 space id"
+                        />
+                      )}
                     </DetailField>
-                    <DetailField label="Space Name">
-                      <Input
-                        value={selectedEdit.spaceName}
-                        onChange={(event) =>
-                          updateAccountEdit(selectedAccount.email, { spaceName: event.target.value })
-                        }
-                        className={FIELD_CLASS}
-                        placeholder="space name"
-                      />
-                    </DetailField>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <DetailField label="Space ID">
+                        <Input
+                          value={selectedEdit.spaceId}
+                          onChange={(event) =>
+                            updateAccountEdit(selectedAccount.email, { spaceId: event.target.value })
+                          }
+                          className={FIELD_CLASS}
+                          placeholder="space id"
+                          readOnly={Boolean(selectedAccount.available_spaces?.length)}
+                        />
+                      </DetailField>
+                      <DetailField label="Space Name">
+                        <Input
+                          value={selectedEdit.spaceName}
+                          onChange={(event) =>
+                            updateAccountEdit(selectedAccount.email, { spaceName: event.target.value })
+                          }
+                          className={FIELD_CLASS}
+                          placeholder="space name"
+                          readOnly={Boolean(selectedAccount.available_spaces?.length)}
+                        />
+                      </DetailField>
+                    </div>
                   </div>
 
                   <div className="grid gap-3 lg:grid-cols-2">

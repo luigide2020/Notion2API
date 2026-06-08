@@ -88,18 +88,25 @@ type PromptConfig struct {
 	precomputedAllRetryPrefixes      []string `json:"-"`
 }
 
+type AccountSpaceInfo struct {
+	SpaceID   string `json:"space_id"`
+	SpaceName string `json:"space_name,omitempty"`
+	PlanType  string `json:"plan_type,omitempty"`
+}
+
 type NotionAccount struct {
-	Email               string `json:"email"`
-	emailKey            string `json:"-"`
-	ProbeJSON           string `json:"probe_json,omitempty"`
-	ProfileDir          string `json:"profile_dir,omitempty"`
-	StorageStatePath    string `json:"storage_state_path,omitempty"`
-	PendingStatePath    string `json:"pending_state_path,omitempty"`
-	UserID              string `json:"user_id,omitempty"`
-	UserName            string `json:"user_name,omitempty"`
-	SpaceID             string `json:"space_id,omitempty"`
-	SpaceViewID         string `json:"space_view_id,omitempty"`
-	SpaceName           string `json:"space_name,omitempty"`
+	Email               string             `json:"email"`
+	emailKey            string             `json:"-"`
+	ProbeJSON           string             `json:"probe_json,omitempty"`
+	ProfileDir          string             `json:"profile_dir,omitempty"`
+	StorageStatePath    string             `json:"storage_state_path,omitempty"`
+	PendingStatePath    string             `json:"pending_state_path,omitempty"`
+	UserID              string             `json:"user_id,omitempty"`
+	UserName            string             `json:"user_name,omitempty"`
+	SpaceID             string             `json:"space_id,omitempty"`
+	SpaceViewID         string             `json:"space_view_id,omitempty"`
+	SpaceName           string             `json:"space_name,omitempty"`
+	AvailableSpaces     []AccountSpaceInfo `json:"available_spaces,omitempty"`
 	PlanType            string `json:"plan_type,omitempty"`
 	ClientVersion       string `json:"client_version,omitempty"`
 	Status              string `json:"status,omitempty"`

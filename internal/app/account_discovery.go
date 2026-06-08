@@ -8,15 +8,16 @@ import (
 )
 
 type discoveredAccountMetadata struct {
-	Email         string
-	UserID        string
-	UserName      string
-	SpaceID       string
-	SpaceViewID   string
-	SpaceName     string
-	PlanType      string
-	ClientVersion string
-	Models        []ModelDefinition
+	Email           string
+	UserID          string
+	UserName        string
+	SpaceID         string
+	SpaceViewID     string
+	SpaceName       string
+	PlanType        string
+	ClientVersion   string
+	Models          []ModelDefinition
+	AvailableSpaces []AccountSpaceInfo
 }
 
 type discoveredSpaceCandidate struct {
@@ -54,22 +55,23 @@ func boolValue(v any) bool {
 	return false
 }
 
-func chooseBestSpace(recordMap map[string]any, userID string) discoveredSpaceCandidate {
+func chooseBestSpace(recordMap map[string]any, userID string) (discoveredSpaceCandidate, []AccountSpaceInfo) {
 	if recordMap == nil || strings.TrimSpace(userID) == "" {
-		return discoveredSpaceCandidate{}
+		return discoveredSpaceCandidate{}, nil
 	}
 	userRoots := mapValue(recordMap["user_root"])
 	spaces := mapValue(recordMap["space"])
 	if userRoots == nil || spaces == nil {
-		return discoveredSpaceCandidate{}
+		return discoveredSpaceCandidate{}, nil
 	}
 	root := unwrapRecordValue(userRoots[userID])
 	if root == nil {
-		return discoveredSpaceCandidate{}
+		return discoveredSpaceCandidate{}, nil
 	}
 	pointers := sliceValue(root["space_view_pointers"])
 	best := discoveredSpaceCandidate{}
 	bestScore := -1
+	var allSpaces []AccountSpaceInfo
 	for _, rawPointer := range pointers {
 		pointer := mapValue(rawPointer)
 		spaceID := strings.TrimSpace(stringValue(pointer["spaceId"]))
@@ -90,6 +92,11 @@ func chooseBestSpace(recordMap map[string]any, userID string) discoveredSpaceCan
 			PlanType:  strings.TrimSpace(stringValue(value["plan_type"])),
 			AIEnabled: enabledAI || !disabledAI,
 		}
+		allSpaces = append(allSpaces, AccountSpaceInfo{
+			SpaceID:   candidate.ID,
+			SpaceName: candidate.Name,
+			PlanType:  candidate.PlanType,
+		})
 		score := 0
 		if candidate.AIEnabled {
 			score += 2
@@ -105,7 +112,7 @@ func chooseBestSpace(recordMap map[string]any, userID string) discoveredSpaceCan
 			bestScore = score
 		}
 	}
-	return best
+	return best, allSpaces
 }
 
 func parseLoadUserContentMetadata(payload map[string]any) discoveredAccountMetadata {
@@ -125,11 +132,12 @@ func parseLoadUserContentMetadata(payload map[string]any) discoveredAccountMetad
 		meta.UserName = strings.TrimSpace(stringValue(value["name"]))
 		break
 	}
-	space := chooseBestSpace(recordMap, meta.UserID)
+	space, allSpaces := chooseBestSpace(recordMap, meta.UserID)
 	meta.SpaceID = space.ID
 	meta.SpaceViewID = space.ViewID
 	meta.SpaceName = space.Name
 	meta.PlanType = space.PlanType
+	meta.AvailableSpaces = allSpaces
 	return meta
 }
 
@@ -198,6 +206,9 @@ func discoverImportedAccountMetadata(ctx context.Context, cfg AppConfig, account
 			meta.SpaceViewID = firstNonEmpty(meta.SpaceViewID, discovered.SpaceViewID)
 			meta.SpaceName = firstNonEmpty(meta.SpaceName, discovered.SpaceName)
 			meta.PlanType = firstNonEmpty(meta.PlanType, discovered.PlanType)
+			if len(discovered.AvailableSpaces) > 0 {
+				meta.AvailableSpaces = discovered.AvailableSpaces
+			}
 			lookupUserID = firstNonEmpty(meta.UserID, lookupUserID)
 		} else {
 			primaryErr = err
@@ -213,6 +224,9 @@ func discoverImportedAccountMetadata(ctx context.Context, cfg AppConfig, account
 				meta.UserName = firstNonEmpty(meta.UserName, bootstrap.UserName)
 				meta.SpaceID = firstNonEmpty(meta.SpaceID, bootstrap.SpaceID)
 				meta.SpaceViewID = firstNonEmpty(meta.SpaceViewID, bootstrap.SpaceViewID)
+				if len(bootstrap.AvailableSpaces) > 0 {
+					meta.AvailableSpaces = bootstrap.AvailableSpaces
+				}
 			} else if primaryErr == nil {
 				primaryErr = err
 			}

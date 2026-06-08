@@ -64,6 +64,7 @@ func (a *App) accountRuntimeSummary(cfg AppConfig, account NotionAccount) map[st
 		"space_id":               account.SpaceID,
 		"space_view_id":          account.SpaceViewID,
 		"space_name":             account.SpaceName,
+		"available_spaces":       account.AvailableSpaces,
 		"plan_type":              account.PlanType,
 		"client_version":         account.ClientVersion,
 		"status":                 account.Status,
@@ -117,6 +118,9 @@ func (a *App) accountRuntimeSummary(cfg AppConfig, account NotionAccount) map[st
 		}
 		if text := firstNonEmpty(status.ClientVersion, account.ClientVersion); text != "" {
 			item["client_version"] = text
+		}
+		if len(status.AvailableSpaces) > 0 {
+			item["available_spaces"] = status.AvailableSpaces
 		}
 	}
 	return item
@@ -506,6 +510,9 @@ func mergeAccountWithStatus(cfg AppConfig, account NotionAccount, status LoginSt
 	account.SpaceID = firstNonEmpty(status.SpaceID, account.SpaceID)
 	account.SpaceViewID = firstNonEmpty(status.SpaceViewID, account.SpaceViewID)
 	account.SpaceName = firstNonEmpty(status.SpaceName, account.SpaceName)
+	if len(status.AvailableSpaces) > 0 {
+		account.AvailableSpaces = status.AvailableSpaces
+	}
 	account.ClientVersion = firstNonEmpty(status.ClientVersion, account.ClientVersion)
 	account.Status = firstNonEmpty(status.Status, account.Status)
 	account.LastError = firstNonEmpty(status.Error, status.Message, account.LastError)
@@ -662,15 +669,16 @@ func buildImportedSession(ctx context.Context, cfg AppConfig, req manualAccountI
 		Cookies:       probe.Cookies,
 	}
 	status := LoginStatusFile{
-		Success:       true,
-		Status:        "ready",
-		Email:         probe.Email,
-		UserID:        probe.UserID,
-		UserName:      userName,
-		SpaceID:       probe.SpaceID,
-		SpaceViewID:   probe.SpaceViewID,
-		SpaceName:     spaceName,
-		ClientVersion: probe.ClientVersion,
+		Success:         true,
+		Status:          "ready",
+		Email:           probe.Email,
+		UserID:          probe.UserID,
+		UserName:        userName,
+		SpaceID:         probe.SpaceID,
+		SpaceViewID:     probe.SpaceViewID,
+		SpaceName:       spaceName,
+		AvailableSpaces: discovered.AvailableSpaces,
+		ClientVersion:   probe.ClientVersion,
 		Title:         "Notion",
 		Message:       "manual session imported",
 		LastLoginAt:   time.Now().Format(time.RFC3339),
@@ -748,6 +756,9 @@ func (a *App) handleAdminAccountManualImport(w http.ResponseWriter, r *http.Requ
 	account.PlanType = firstNonEmpty(account.PlanType, discovered.PlanType)
 	account.UserName = firstNonEmpty(account.UserName, discovered.UserName)
 	account.SpaceName = firstNonEmpty(account.SpaceName, discovered.SpaceName)
+	if len(discovered.AvailableSpaces) > 0 {
+		account.AvailableSpaces = discovered.AvailableSpaces
+	}
 	if len(discovered.Models) > 0 {
 		cfg.Models = mergeModelDefinitions(discovered.Models, cfg.Models)
 	}

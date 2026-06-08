@@ -127,15 +127,16 @@ func buildRefreshedSession(ctx context.Context, cfg AppConfig, account NotionAcc
 		spaceName = userName + "'s Space"
 	}
 	return SessionInfo{
-		ProbePath:     account.ProbeJSON,
-		ClientVersion: clientVersion,
-		UserID:        userID,
-		UserEmail:     firstNonEmpty(spaces.Email, prior.UserEmail, account.Email),
-		UserName:      userName,
-		SpaceID:       firstNonEmpty(spaces.SpaceID, prior.SpaceID, account.SpaceID),
-		SpaceViewID:   firstNonEmpty(spaces.SpaceViewID, prior.SpaceViewID, account.SpaceViewID),
-		SpaceName:     spaceName,
-		Cookies:       cookies,
+		ProbePath:       account.ProbeJSON,
+		ClientVersion:   clientVersion,
+		UserID:          userID,
+		UserEmail:       firstNonEmpty(spaces.Email, prior.UserEmail, account.Email),
+		UserName:        userName,
+		SpaceID:         firstNonEmpty(spaces.SpaceID, prior.SpaceID, account.SpaceID),
+		SpaceViewID:     firstNonEmpty(spaces.SpaceViewID, prior.SpaceViewID, account.SpaceViewID),
+		SpaceName:       spaceName,
+		Cookies:         cookies,
+		AvailableSpaces: spaces.AvailableSpaces,
 	}, nil
 }
 
@@ -256,6 +257,9 @@ func (s *ServerState) tryRefreshAccount(ctx context.Context, cfg AppConfig, acco
 	account.SpaceID = refreshedSession.SpaceID
 	account.SpaceViewID = refreshedSession.SpaceViewID
 	account.SpaceName = firstNonEmpty(refreshedSession.SpaceName, account.SpaceName)
+	if len(refreshedSession.AvailableSpaces) > 0 {
+		account.AvailableSpaces = refreshedSession.AvailableSpaces
+	}
 	account.ClientVersion = refreshedSession.ClientVersion
 	account.Status = "ready"
 	account.LastError = ""

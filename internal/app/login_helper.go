@@ -60,10 +60,11 @@ type loginBootstrap struct {
 }
 
 type loginSpaceBootstrap struct {
-	Email       string
-	UserName    string
-	SpaceID     string
-	SpaceViewID string
+	Email           string
+	UserName        string
+	SpaceID         string
+	SpaceViewID     string
+	AvailableSpaces []AccountSpaceInfo
 }
 
 type notionLoginAPIError struct {
@@ -519,11 +520,36 @@ func parseSpacesInitial(payload map[string]any, userID string) loginSpaceBootstr
 	userRootValue := mapValue(userRootEntry["value"])
 	spaceID, spaceViewID := firstSpacePointer(sliceValue(userRootValue["space_view_pointers"]))
 
+	// Collect all available spaces from space_view_pointers
+	var allSpaces []AccountSpaceInfo
+	spaceRecords := mapValue(payload["spaces"])
+	for _, rawPointer := range sliceValue(userRootValue["space_view_pointers"]) {
+		pointer := mapValue(rawPointer)
+		sid := strings.TrimSpace(stringValue(pointer["spaceId"]))
+		if sid == "" {
+			continue
+		}
+		spaceName := sid
+		planType := ""
+		if spaceRecords != nil {
+			if sv := unwrapRecordValue(spaceRecords[sid]); sv != nil {
+				spaceName = firstNonEmpty(strings.TrimSpace(stringValue(sv["name"])), sid)
+				planType = strings.TrimSpace(stringValue(sv["plan_type"]))
+			}
+		}
+		allSpaces = append(allSpaces, AccountSpaceInfo{
+			SpaceID:   sid,
+			SpaceName: spaceName,
+			PlanType:  planType,
+		})
+	}
+
 	return loginSpaceBootstrap{
-		Email:       strings.TrimSpace(stringValue(notionUserValue["email"])),
-		UserName:    strings.TrimSpace(stringValue(notionUserValue["name"])),
-		SpaceID:     spaceID,
-		SpaceViewID: spaceViewID,
+		Email:           strings.TrimSpace(stringValue(notionUserValue["email"])),
+		UserName:        strings.TrimSpace(stringValue(notionUserValue["name"])),
+		SpaceID:         spaceID,
+		SpaceViewID:     spaceViewID,
+		AvailableSpaces: allSpaces,
 	}
 }
 
@@ -751,6 +777,7 @@ func VerifyEmailLogin(ctx context.Context, cfg AppConfig, req LoginVerifyRequest
 	pending.UserName = spaces.UserName
 	pending.SpaceID = spaces.SpaceID
 	pending.SpaceViewID = spaces.SpaceViewID
+	pending.AvailableSpaces = spaces.AvailableSpaces
 	pending.ClientVersion = clientVersion
 	pending.CurrentURL = upstream.HomeURL()
 	pending.FinalURL = upstream.HomeURL()

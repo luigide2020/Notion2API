@@ -233,15 +233,16 @@ type probePayload struct {
 }
 
 type SessionInfo struct {
-	ProbePath     string
-	ClientVersion string
-	UserID        string
-	UserEmail     string
-	UserName      string
-	SpaceID       string
-	SpaceViewID   string
-	SpaceName     string
-	Cookies       []ProbeCookie
+	ProbePath       string
+	ClientVersion   string
+	UserID          string
+	UserEmail       string
+	UserName        string
+	SpaceID         string
+	SpaceViewID     string
+	SpaceName       string
+	Cookies         []ProbeCookie
+	AvailableSpaces []AccountSpaceInfo
 }
 
 type UploadedAttachment struct {
