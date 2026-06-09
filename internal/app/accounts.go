@@ -86,6 +86,19 @@ func firstNonEmpty(values ...string) string {
 	return ""
 }
 
+func accountSpaceExists(spaces []AccountSpaceInfo, spaceID string) bool {
+	target := strings.TrimSpace(spaceID)
+	if target == "" {
+		return false
+	}
+	for _, sp := range spaces {
+		if strings.TrimSpace(sp.SpaceID) == target {
+			return true
+		}
+	}
+	return false
+}
+
 func resolveConfigRelativePath(configPath string, raw string, fallback string) string {
 	value := strings.TrimSpace(raw)
 	if value == "" {
@@ -281,6 +294,9 @@ func (cfg *AppConfig) UpsertAccount(account NotionAccount) (NotionAccount, int) 
 		}
 		if account.SpaceName == "" {
 			account.SpaceName = existing.SpaceName
+		}
+		if len(account.AvailableSpaces) == 0 {
+			account.AvailableSpaces = existing.AvailableSpaces
 		}
 		if account.PlanType == "" {
 			account.PlanType = existing.PlanType
