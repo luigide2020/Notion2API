@@ -254,11 +254,27 @@ func (s *ServerState) tryRefreshAccount(ctx context.Context, cfg AppConfig, acco
 	}
 	account.UserID = refreshedSession.UserID
 	account.UserName = refreshedSession.UserName
-	account.SpaceID = refreshedSession.SpaceID
-	account.SpaceViewID = refreshedSession.SpaceViewID
-	account.SpaceName = firstNonEmpty(refreshedSession.SpaceName, account.SpaceName)
+	// Update available spaces from the fresh session
 	if len(refreshedSession.AvailableSpaces) > 0 {
 		account.AvailableSpaces = refreshedSession.AvailableSpaces
+	}
+	// If the user manually selected a space that still exists in the
+	// refreshed available spaces list, preserve their choice instead
+	// of overwriting with the auto-selected default.
+	if account.SpaceID != "" && accountSpaceExists(account.AvailableSpaces, account.SpaceID) {
+		// Keep user's SpaceID; update ViewID/Name only if they match
+		for _, sp := range account.AvailableSpaces {
+			if sp.SpaceID == account.SpaceID {
+				if sp.SpaceName != "" {
+					account.SpaceName = sp.SpaceName
+				}
+				break
+			}
+		}
+	} else {
+		account.SpaceID = refreshedSession.SpaceID
+		account.SpaceViewID = refreshedSession.SpaceViewID
+		account.SpaceName = firstNonEmpty(refreshedSession.SpaceName, account.SpaceName)
 	}
 	account.ClientVersion = refreshedSession.ClientVersion
 	account.Status = "ready"

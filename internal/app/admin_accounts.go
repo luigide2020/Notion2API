@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -264,6 +265,41 @@ func mergeEditableAccountFields(existing NotionAccount, payload map[string]any) 
 	return next, makeActive, nil
 }
 
+// updateProbeJSONSpace patches the probe.json file on disk so that
+// ApplyConfig (which reloads from probe.json) sees the user-selected
+// space_id / space_name / space_view_id instead of the stale values.
+func updateProbeJSONSpace(probePath string, spaceID string, spaceName string, spaceViewID string) error {
+	clean := strings.TrimSpace(probePath)
+	if clean == "" || !fileExists(clean) {
+		return nil
+	}
+	raw, err := os.ReadFile(clean)
+	if err != nil {
+		return err
+	}
+	var probe map[string]any
+	if err := json.Unmarshal(raw, &probe); err != nil {
+		return err
+	}
+	changed := false
+	if spaceID != "" && strings.TrimSpace(fmt.Sprintf("%v", probe["space_id"])) != spaceID {
+		probe["space_id"] = spaceID
+		changed = true
+	}
+	if spaceName != "" && strings.TrimSpace(fmt.Sprintf("%v", probe["space_name"])) != spaceName {
+		probe["space_name"] = spaceName
+		changed = true
+	}
+	if spaceViewID != "" && strings.TrimSpace(fmt.Sprintf("%v", probe["space_view_id"])) != spaceViewID {
+		probe["space_view_id"] = spaceViewID
+		changed = true
+	}
+	if !changed {
+		return nil
+	}
+	return writePrettyJSONFile(clean, probe)
+}
+
 func (a *App) handleAdminAccounts(w http.ResponseWriter, r *http.Request) {
 	if !a.adminAuthOK(w, r) {
 		return
@@ -325,6 +361,12 @@ func (a *App) handleAdminAccounts(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		cfg.Accounts[index] = ensureAccountPaths(cfg, next)
+		// Patch the probe.json on disk so ApplyConfig sees the new space
+		if next.SpaceID != existing.SpaceID || next.SpaceName != existing.SpaceName {
+			if err := updateProbeJSONSpace(next.ProbeJSON, next.SpaceID, next.SpaceName, ""); err != nil {
+				log.Printf("[admin] update probe.json space failed: %v", err)
+			}
+		}
 		if canonicalEmailKey(cfg.ActiveAccount) == getAccountEmailKey(next) && next.Disabled {
 			cfg.ActiveAccount = ""
 			cfg.ProbeJSON = ""
@@ -507,11 +549,24 @@ func mergeAccountWithStatus(cfg AppConfig, account NotionAccount, status LoginSt
 	account.ProbeJSON = firstNonEmpty(status.ProbePath, account.ProbeJSON)
 	account.UserID = firstNonEmpty(status.UserID, account.UserID)
 	account.UserName = firstNonEmpty(status.UserName, account.UserName)
-	account.SpaceID = firstNonEmpty(status.SpaceID, account.SpaceID)
-	account.SpaceViewID = firstNonEmpty(status.SpaceViewID, account.SpaceViewID)
-	account.SpaceName = firstNonEmpty(status.SpaceName, account.SpaceName)
+	// Update available spaces first so we can check if user's choice is still valid
 	if len(status.AvailableSpaces) > 0 {
 		account.AvailableSpaces = status.AvailableSpaces
+	}
+	// If the account already had a SpaceID and it's still in the available
+	// spaces list, preserve the user's manual selection.
+	if account.SpaceID != "" && accountSpaceExists(account.AvailableSpaces, account.SpaceID) {
+		// Keep account.SpaceID; just refresh the name
+		for _, sp := range account.AvailableSpaces {
+			if sp.SpaceID == account.SpaceID && sp.SpaceName != "" {
+				account.SpaceName = sp.SpaceName
+				break
+			}
+		}
+	} else {
+		account.SpaceID = firstNonEmpty(status.SpaceID, account.SpaceID)
+		account.SpaceViewID = firstNonEmpty(status.SpaceViewID, account.SpaceViewID)
+		account.SpaceName = firstNonEmpty(status.SpaceName, account.SpaceName)
 	}
 	account.ClientVersion = firstNonEmpty(status.ClientVersion, account.ClientVersion)
 	account.Status = firstNonEmpty(status.Status, account.Status)
